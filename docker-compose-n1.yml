@@ -10,7 +10,7 @@ services:
       JAVA_OPTS: -Xms128m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
     volumes:
       - ./data:/data
-      - ./music:/music
+      - /vol3/1000/music-api-test:/music
     ports:
       - "8099:8099"
     restart: unless-stopped
