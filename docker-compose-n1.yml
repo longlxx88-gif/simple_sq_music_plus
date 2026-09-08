@@ -1,6 +1,6 @@
 services:
   sqmusic_main:
-    image: ${SQMUSIC_IMAGE:-ghcr.io/59799517/SQMUSIC_LITE:latest-arm64}
+    image: ${SQMUSIC_IMAGE:-ghcr.io/longlxx88-gif/sqmusic_lite:latest}
     container_name: sqmusic_lite
     environment:
       SPRING_PROFILES_ACTIVE: n1,kw,mg,qq,netease,kg,tidal
