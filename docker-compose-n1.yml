@@ -21,7 +21,7 @@ services:
     restart: unless-stopped
 
   sqmusic_web:
-    image: ${SQMUSIC_WEB_IMAGE:-registry.cn-hangzhou.aliyuncs.com/sqdockler/simple_sq_music_plus_web:latest-arm64}
+    image: ${SQMUSIC_WEB_IMAGE:-registry.cn-hangzhou.aliyuncs.com/sqdockler/simple_sq_music_plus_web:latest}
     container_name: sqmusic_lite_web
     ports:
       - "${SQMUSIC_WEB_PORT:-8196}:80"
