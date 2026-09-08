@@ -5,6 +5,7 @@ services:
     container_name: sqmusic_lite
     environment:
       SPRING_PROFILES_ACTIVE: n1,kw,mg,qq,netease,kg,tidal
+      SQMUSIC_ORIGINAL_SOURCES: "true"
       APP_DATA_DIR: /data
       MCP_ENABLED: "true"
       MCP_STDIO_ENABLED: "false"

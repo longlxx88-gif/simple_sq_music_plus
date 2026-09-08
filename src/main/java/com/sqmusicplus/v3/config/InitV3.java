@@ -49,8 +49,9 @@ public class InitV3  implements ApplicationRunner {
     @Value("${spring.profiles.active:}")
     private String activeProfiles;
 
-    @Value("${spring.datasource.url:}")
-    private String datasourceUrl;
+    /** Explicit switch for deployments that want the original five source entries. */
+    @Value("${sqmusic.original-sources:false}")
+    private boolean originalSources;
 
 
 
@@ -73,15 +74,12 @@ public class InitV3  implements ApplicationRunner {
         SqConfigCache.setSqConfigMap(list);
         // ApplicationRunner 可能被测试或容器重载触发多次，避免选项重复。
         SqConfigCache.PlugOptions.clear();
-        // Spring may consume spring.profiles.active before @Value resolves it.
-        // Also recognize the N1 profile by its H2 datasource / mounted data dir.
-        boolean n1OriginalSources = activeProfiles != null &&
+        // Keep the original source list independent from the host (FNOS today,
+        // N1 later). The n1 profile remains a compatible fallback for migration.
+        boolean n1OriginalSources = originalSources || (activeProfiles != null &&
                 java.util.Arrays.stream(activeProfiles.split(","))
                         .map(String::trim)
-                        .anyMatch("n1"::equalsIgnoreCase);
-        n1OriginalSources = n1OriginalSources
-                || (datasourceUrl != null && datasourceUrl.startsWith("jdbc:h2:"))
-                || System.getenv("APP_DATA_DIR") != null;
+                        .anyMatch("n1"::equalsIgnoreCase));
         log.info("================缓存设置成功====================");
         log.info("初始化插件");
 
