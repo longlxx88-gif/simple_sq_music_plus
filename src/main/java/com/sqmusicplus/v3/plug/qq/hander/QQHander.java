@@ -112,7 +112,7 @@ public class QQHander extends SearchHanderAbstract {
      * QQ 音乐搜索接口对请求头和 JSON 字段都比较敏感，统一在这里构造请求，
      * 避免歌曲、歌手、专辑三种搜索逻辑出现不一致。
      */
-    private JSONObject requestSearch(String keyword, int type, Integer pageIndex, Integer pageSize) {
+    private JSONObject requestSearch(String keyword, String type, Integer pageIndex, Integer pageSize) {
         String searchUrl = config.getSearchUrl();
         String payload = qqSearchEntity.searchRequestParam(keyword, type,
                 pageIndex == null || pageIndex < 1 ? 1 : pageIndex,
