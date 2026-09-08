@@ -42,6 +42,13 @@ public class InitV3  implements ApplicationRunner {
     @Value("${version}")
     private String version;
 
+    /**
+     * N1 精简版仍保留原版的五个搜索入口。搜索源是否能返回结果由各自
+     * 接口决定，不能因为某个公共 API 短暂不可用就把入口从前端隐藏。
+     */
+    @Value("${spring.profiles.active:}")
+    private String activeProfiles;
+
 
 
     @Autowired
@@ -61,13 +68,19 @@ public class InitV3  implements ApplicationRunner {
         List<SqConfig> list = configService.list();
         //加入缓存
         SqConfigCache.setSqConfigMap(list);
+        // ApplicationRunner 可能被测试或容器重载触发多次，避免选项重复。
+        SqConfigCache.PlugOptions.clear();
+        boolean n1OriginalSources = activeProfiles != null &&
+                java.util.Arrays.stream(activeProfiles.split(","))
+                        .map(String::trim)
+                        .anyMatch("n1"::equalsIgnoreCase);
         log.info("================缓存设置成功====================");
         log.info("初始化插件");
 
 //        ------------------------酷我-----------------------------
 
         String kwsqConfigvalue = SqConfigCache.getSqConfigValue(SetConfigEnum.PLUG_KW_OPEN);
-        if (Boolean.valueOf(kwsqConfigvalue)) {
+        if (n1OriginalSources || Boolean.valueOf(kwsqConfigvalue)) {
             HashMap<String, String> kwoption = new HashMap<>();
             kwoption.put("value","kw");
             kwoption.put("label","某我");
@@ -80,7 +93,7 @@ public class InitV3  implements ApplicationRunner {
 
         //------------------------网易云音乐-----------------------------
         String  netsqConfigvalue = SqConfigCache.getSqConfigValue(SetConfigEnum.PLUG_NETEASE_OPEN);
-        if (Boolean.valueOf(netsqConfigvalue)) {
+        if (n1OriginalSources || Boolean.valueOf(netsqConfigvalue)) {
             // 检测自建 neteasecloudmusicapi 服务，若可用则将其放到 baseUrl 首位
             String neteaseBuiltinUrl = "http://neteasecloudmusicapi:3000";
 //            String neteaseBuiltinUrl = "http://127.0.0.1:3000";
@@ -123,14 +136,15 @@ public class InitV3  implements ApplicationRunner {
                 log.info("未发现网易云cookie使用匿名登陆");
             }
             boolean b = neteaseHander.initPlug();
-            if ( b){
-                HashMap<String, String> neteaseoption = new HashMap<>();
-                neteaseoption.put("value","netease");
-                neteaseoption.put("label","猪厂");
-                neteaseoption.put("desc","无需登录支持flac");
+            HashMap<String, String> neteaseoption = new HashMap<>();
+            neteaseoption.put("value","netease");
+            neteaseoption.put("label","猪厂");
+            neteaseoption.put("desc","无需登录支持flac");
+            // N1 保留入口，即使当前公共 API 探测失败，后续仍可在设置中更换地址。
+            if (b || n1OriginalSources) {
                 SqConfigCache.addPlugOptions(neteaseoption);
-                log.info("网易云音乐插件开启成功！");
-            }else{
+                log.info("网易云音乐搜索源已加入（接口状态：{}）", b ? "可用" : "待检查");
+            } else {
                 log.error("网易云未开启插件！");
             }
 
@@ -141,10 +155,10 @@ public class InitV3  implements ApplicationRunner {
 
         //------------------------QQvip音乐-----------------------------
         String  qqvipsqConfigvalue = SqConfigCache.getSqConfigValue(SetConfigEnum.PLUG_QQVIP_OPEN);
-        if (Boolean.valueOf(qqvipsqConfigvalue)) {
+        if (n1OriginalSources || Boolean.valueOf(qqvipsqConfigvalue)) {
             HashMap<String, String> QQVIPoption = new HashMap<>();
             QQVIPoption.put("value","qqvip");
-            QQVIPoption.put("label","鹅厂VIP下");
+            QQVIPoption.put("label","鹅厂 VIP下载");
             QQVIPoption.put("desc","需要登录，支持flac，自动同步喜欢的去设置开启");
 
             SqConfigCache.addPlugOptions(QQVIPoption);
@@ -165,7 +179,7 @@ public class InitV3  implements ApplicationRunner {
         //------------------------咪咕音乐----------------------------
 
         String mgsqConfigvalue = SqConfigCache.getSqConfigValue(SetConfigEnum.PLUG_MG_OPEN);
-        if (Boolean.valueOf(mgsqConfigvalue)) {
+        if (n1OriginalSources || Boolean.valueOf(mgsqConfigvalue)) {
             HashMap<String, String> kwoption = new HashMap<>();
             kwoption.put("value","mg");
             kwoption.put("label","移动");
@@ -213,7 +227,7 @@ public class InitV3  implements ApplicationRunner {
 
 //        ------------------------Tidal-----------------------------
         String  tidalsqConfigvalue = SqConfigCache.getSqConfigValue(SetConfigEnum.PLUG_TIDAL_OPEN);
-        if (Boolean.valueOf(tidalsqConfigvalue)) {
+        if (n1OriginalSources || Boolean.valueOf(tidalsqConfigvalue)) {
             HashMap<String, String> Tidaloption = new HashMap<>();
             Tidaloption.put("value","tidal");
             Tidaloption.put("label","Tidal");
