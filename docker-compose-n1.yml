@@ -2,12 +2,15 @@ services:
   sqmusic_main:
     image: ${SQMUSIC_IMAGE:-ghcr.io/longlxx88-gif/sqmusic_lite:latest}
     container_name: sqmusic_lite
-    environment:
-      SPRING_PROFILES_ACTIVE: n1,kw,mg,qq,netease,kg,tidal
-      APP_DATA_DIR: /data
-      MCP_ENABLED: "true"
-      MCP_STDIO_ENABLED: "false"
-      JAVA_OPTS: -Xms128m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+      environment:
+        SPRING_PROFILES_ACTIVE: n1,kw,mg,qq,netease,kg,tidal
+        APP_DATA_DIR: /data
+        MCP_ENABLED: "true"
+        MCP_STDIO_ENABLED: "false"
+        HTTP_PROXY: http://192.168.31.33:7890
+        HTTPS_PROXY: http://192.168.31.33:7890
+        NO_PROXY: localhost,127.0.0.1,::1,sqmusic_main,sqmusic_web
+        JAVA_OPTS: -Xms128m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
     volumes:
       - ./data:/data
       - /vol3/1000/music-api-test:/music
