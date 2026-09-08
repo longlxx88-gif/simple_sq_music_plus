@@ -1,0 +1,38 @@
+# SQMUSIC_LITE profile for N1 / ARM64.
+# The database and queue state live under APP_DATA_DIR so no MySQL container is needed.
+spring:
+  datasource:
+    url: jdbc:h2:file:${APP_DATA_DIR:./data}/sqmusic;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+    hikari:
+      minimum-idle: 1
+      maximum-pool-size: 4
+      connection-timeout: 30000
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/n1-schema.sql
+      data-locations: classpath:db/sq_config.sql
+      continue-on-error: true
+  task:
+    execution:
+      pool:
+        size: 4
+        core-size: 2
+        max-size: 4
+
+app:
+  scheduler:
+    pool-size: 4
+  features:
+    # Queue execution, Tidal token refresh and cleanup remain enabled.
+    background-automation: false
+    alidrive: false
+    monitor: false
+
+mcp:
+  enabled: ${MCP_ENABLED:true}
+  http-path: /mcp
+  stdio-enabled: ${MCP_STDIO_ENABLED:false}

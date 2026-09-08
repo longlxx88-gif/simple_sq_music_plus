@@ -1,0 +1,48 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+.reasonix
+.codegraph
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+### package-lock 在vue目录下的###
+vue/package-lock.json
+.node
+.lingma
+/.lingma/
+/.lingma/**
+.lingma/**
+/.reasonix/
+.reasonix/**
+./.codebuddy
+./.codebuddy/**
+.codebuddy/
+AGENTS.md

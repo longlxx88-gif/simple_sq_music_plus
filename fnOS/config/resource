@@ -1,0 +1,22 @@
+{
+  "docker-project": {
+    "projects": [
+      {
+        "name": "music",
+        "path": "music"
+      },
+      {
+        "name": "sq_music",
+        "path": "docker"
+      }
+    ]
+  },
+  "data-share": {
+    "shares": [
+      {
+        "name": "sq_music",
+        "permission": {}
+      }
+    ]
+  }
+}

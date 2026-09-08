@@ -1,0 +1,22 @@
+<layers xmlns="http://www.springframework.org/schema/boot/layers"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.springframework.org/schema/boot/layers
+                            https://www.springframework.org/schema/boot/layers/layers-2.7.xsd">
+    <!-- 应用代码分层（spring-boot-loader + application） -->
+    <application>
+        <into layer="spring-boot-loader">
+            <include>org/springframework/boot/loader/**</include>
+        </into>
+        <into layer="application"/>
+    </application>
+    <dependencies>
+        <!-- N1 lite keeps all Java dependencies in one small layer. -->
+        <into layer="dependencies"/>
+    </dependencies>
+    <!-- 越稳定的层越靠前 -->
+    <layerOrder>
+        <layer>dependencies</layer>
+        <layer>spring-boot-loader</layer>
+        <layer>application</layer>
+    </layerOrder>
+</layers>

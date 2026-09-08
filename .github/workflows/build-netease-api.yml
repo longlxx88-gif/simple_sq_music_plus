@@ -1,0 +1,123 @@
+name: Build Netease Cloud Music API
+
+# 仅手动触发，可自定义版本号
+on:
+  workflow_dispatch:
+    inputs:
+      npm_version:
+        description: '要构建的 npm 包版本号（如 4.32.0），留空则自动使用 npm 最新版本'
+        required: false
+        default: ''
+env:
+  IMAGE_NAME: registry.cn-hangzhou.aliyuncs.com/sqdockler/netease_cloud_music_api
+  NPM_PACKAGE: NeteaseCloudMusicApi
+  DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}"
+  DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}"
+
+jobs:
+  build-and-push:
+    name: Build and Push Multi-Arch Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.cn-hangzhou.aliyuncs.com
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+
+      # 确定要构建的版本：优先使用手动输入的版本号，否则读取 npm 最新版本
+      - name: Resolve version to build
+        id: npm_version
+        run: |
+          if [ -n "${{ inputs.npm_version }}" ]; then
+            VERSION="${{ inputs.npm_version }}"
+            echo "使用手动指定的版本: $VERSION"
+          else
+            VERSION=$(curl -sL "https://registry.npmjs.org/${NPM_PACKAGE}/latest" | jq -r '.version')
+            echo "使用 npm 最新版本: $VERSION"
+          fi
+          # 校验版本号格式，防止非法输入
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "错误: 版本号格式非法: $VERSION (应为 x.y.z)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # 若该版本镜像已存在则跳过，避免重复构建
+      - name: Check if image already exists
+        id: check_image
+        run: |
+          if docker manifest inspect "${IMAGE_NAME}:v${{ steps.npm_version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "镜像 v${{ steps.npm_version.outputs.version }} 已存在，跳过构建"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 构建上下文目录无需提交到仓库：构建时临时生成一个极简 Dockerfile，
+      # 直接基于 npm 包 NeteaseCloudMusicApi 安装（与本地 npm install 流程一致）
+      # 用 printf 逐行写入（单引号防 shell 展开，${NETEASE_API_VERSION} 保留给 Docker ARG 使用）
+      - name: Prepare build context
+        if: steps.check_image.outputs.exists == 'false'
+        run: |
+          mkdir -p ./netease-cloud-music-api
+          printf '%s\n' \
+            'FROM node:20-alpine' \
+            '' \
+            'RUN apk add --no-cache tini' \
+            '' \
+            'ENV NODE_ENV=production' \
+            '' \
+            'WORKDIR /app' \
+            '' \
+            'ARG NETEASE_API_VERSION=latest' \
+            '' \
+            'RUN npm install --omit=dev NeteaseCloudMusicApi@${NETEASE_API_VERSION}' \
+            '' \
+            'EXPOSE 3000' \
+            '' \
+            'CMD ["/sbin/tini", "--", "node", "node_modules/NeteaseCloudMusicApi/app.js"]' \
+            > ./netease-cloud-music-api/Dockerfile
+          echo "Dockerfile 生成完成，构建版本: ${{ steps.npm_version.outputs.version }}"
+
+      - name: Build and Push to Aliyun
+        if: steps.check_image.outputs.exists == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./netease-cloud-music-api
+          file: ./netease-cloud-music-api/Dockerfile
+          build-args: |
+            NETEASE_API_VERSION=${{ steps.npm_version.outputs.version }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:v${{ steps.npm_version.outputs.version }}
+            ${{ env.IMAGE_NAME }}:latest
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 网易云音乐 API 镜像状态" >> $GITHUB_STEP_SUMMARY
+          echo "- 本次构建版本: **v${{ steps.npm_version.outputs.version }}**" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ inputs.npm_version }}" ]; then
+            echo "- 版本来源: 手动指定" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- 版本来源: npm 最新版" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.check_image.outputs.exists }}" == "true" ]; then
+            echo "- 结果: 该版本已存在，无需重新构建" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- 结果: 已构建并推送镜像" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- 镜像地址: \`${IMAGE_NAME}:v${{ steps.npm_version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY

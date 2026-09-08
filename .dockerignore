@@ -1,0 +1,11 @@
+.git
+.github
+target
+mysql_data
+music
+data
+img
+free_plug
+fnOS
+src/test
+*.fpk

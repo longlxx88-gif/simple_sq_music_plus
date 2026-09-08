@@ -1,0 +1,7 @@
+{
+  "username": "sq_music",
+  "groupname": "sq_music",
+  "defaults": {
+    "run-as": "package"
+  }
+}

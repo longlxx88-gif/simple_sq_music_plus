@@ -1,0 +1,88 @@
+server:
+  port: 8099
+  tomcat:
+    max-http-header-size: 32768
+spring:
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: jdbc:mysql://${DB_IP:localhost}:${DB_PORT:3306}/${DB_NAME:sqmusicv3}?useUnicode=true&useSSL=false&characterEncoding=utf8&serverTimezone=UTC&rewriteBatchedStatements=true&allowMultiQueries=true
+    driver-class-name: com.mysql.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    type: com.zaxxer.hikari.HikariDataSource
+    # 连接池
+    hikari:
+      #连接池名
+      pool-name: DateHikariCP
+      #最小空闲连接数
+      minimum-idle: 5
+      # 空闲连接存活最大时间，默认600000（10分钟）
+      idle-timeout: 180000
+      # 连接池最大连接数，默认是10
+      maximum-pool-size: 10
+      # 此属性控制从池返回的连接的默认自动提交行为,默认值：true
+      auto-commit: true
+      # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认1800000即30分钟
+      max-lifetime: 1800000
+      # 数据库连接超时时间,默认30秒，即30000
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+  jackson:
+    default-property-inclusion: non_null
+  profiles:
+    active: kw,mg,qq,netease,kg,tidal
+  mvc:
+    static-path-pattern: /**
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  web:
+    resources:
+      static-locations: classpath:/static/,classpath:/public/,classpath:/resources/,classpath:/META-INF/resources/,classpath:/docs/
+  main:
+    allow-circular-references: true
+    banner-mode: off
+  task:
+    execution:
+      pool:
+        size: 20
+        core-size: 20
+        max-size: 40
+mybatis-plus:
+  # 搜索指定包别名
+  typeAliasesPackage: com.sqmusicplus.v3.*.entity
+  # 配置mapper的扫描，找到所有的mapper.xml映射文件
+  mapperLocations: classpath*:mapper/*Mapper.xml
+  # 加载全局的配置文件
+  configuration:
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    cache-enabled: true
+  global-config:
+    db-config:
+#      select-strategy: NOT_NULL
+      select-strategy: NOT_NULL
+    banner: false
+
+# 日志配置
+logging:
+  level:
+    com.sqmusicplus: info
+    com.sqmusicplus.v3.config.RequireLoginPathScanner: info
+    org.springframework: warn
+    org.jaudiotagger: warn
+
+version: 1.0.0
+webversion: lite
+
+# JWT 配置
+jwt:
+  secret: sqmusic-secret-key-2025-very-long-string-for-security-purposes
+  expiration: 604800000  # Token 有效期 7 天
+
+# MCP (Model Context Protocol) 配置
+mcp:
+  enabled: ${MCP_ENABLED:true}           # SQMUSIC_LITE 默认启用 MCP，生产环境建议使用独立密钥
+  http-path: /mcp         # HTTP 传输路径
+  stdio-enabled: ${MCP_STDIO_ENABLED:false}   # 是否启用 STDIO 传输 (默认关闭, 仅作为子进程启动时开启)
+
