@@ -39,9 +39,16 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: sqmusic-lite-build
-          path: target
-      - name: Verify build artifact
-        run: ls -lh target
+          path: artifact
+      - name: Prepare build context
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p target
+          jar_path="$(find artifact -type f -name 'sqmusic_lite.jar' -print -quit)"
+          test -n "$jar_path"
+          cp "$jar_path" target/sqmusic_lite.jar
+          ls -lh target/sqmusic_lite.jar
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
