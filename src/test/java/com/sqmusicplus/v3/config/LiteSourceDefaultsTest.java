@@ -19,7 +19,7 @@ class LiteSourceDefaultsTest {
                 ScriptUtils.executeSqlScript(connection, defaults);
                 try (var rows = statement.executeQuery("SELECT COUNT(*) FROM sq_config")) {
                     assertTrue(rows.next());
-                    assertEquals(3, rows.getInt(1));
+                    assertEquals(4, rows.getInt(1));
                 }
                 try (var rows = statement.executeQuery("SELECT config_value FROM sq_config WHERE config_key='plug.tidal.token'")) {
                     assertTrue(rows.next());
@@ -28,6 +28,10 @@ class LiteSourceDefaultsTest {
                 try (var rows = statement.executeQuery("SELECT config_value FROM sq_config WHERE config_key='plug.mg.open'")) {
                     assertTrue(rows.next());
                     assertEquals("false", rows.getString(1));
+                }
+                try (var rows = statement.executeQuery("SELECT config_value FROM sq_config WHERE config_key='system.download.file.template'")) {
+                    assertTrue(rows.next());
+                    assertEquals("${artists}/${album}/${musicName} - ${artists}", rows.getString(1));
                 }
             }
         }
