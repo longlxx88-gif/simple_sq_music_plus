@@ -290,7 +290,7 @@ public class ConfigController {
             if (configValue.equals(DbBooleanConvert.YES.getBooleanValue().toString())) {
                 HashMap<String, String> QQVIPoption = new HashMap<>();
                 QQVIPoption.put("value", "qqvip");
-                QQVIPoption.put("label","鹅厂VIP下载");
+                QQVIPoption.put("label","鹅厂 VIP下载");
                 QQVIPoption.put("desc","需要登录，支持flac，自动同步喜欢的去设置开启");
 
                 //修改酷狗插打开插件功能

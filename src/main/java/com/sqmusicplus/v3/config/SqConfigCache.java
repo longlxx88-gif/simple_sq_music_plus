@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @Classname SqConfigCache
@@ -28,7 +30,7 @@ public class SqConfigCache {
     /**
      * 插件配置项
      */
-    public static ArrayList<HashMap<String, String>> PlugOptions = new ArrayList<>();
+    public static final List<HashMap<String, String>> PlugOptions = new CopyOnWriteArrayList<>();
 
 
 
@@ -139,30 +141,30 @@ public class SqConfigCache {
     /**
      * 添加插件选项
      */
-    public static void addPlugOptions(HashMap<String, String> plugOptions) {
-        PlugOptions.add(plugOptions);
+    public static synchronized void addPlugOptions(HashMap<String, String> plugOptions) {
+        String value = Objects.requireNonNull(plugOptions.get("value"), "音源编号不能为空");
+        for (int i = 0; i < PlugOptions.size(); i++) {
+            if (value.equals(PlugOptions.get(i).get("value"))) {
+                PlugOptions.set(i, new HashMap<>(plugOptions));
+                for (int j = PlugOptions.size() - 1; j > i; j--) {
+                    if (value.equals(PlugOptions.get(j).get("value"))) PlugOptions.remove(j);
+                }
+                return;
+            }
+        }
+        PlugOptions.add(new HashMap<>(plugOptions));
     }
     /**
      * 修改选项
      */
     public static void updatePlugOptions(HashMap<String, String> plugOptions) {
-        String targetLabel = plugOptions.get("label");
-        if (targetLabel == null) {
-            addPlugOptions(plugOptions);
-            return;
-        }
-
-        // 使用Iterator安全地移除元素
-        PlugOptions.removeIf(plugOption -> targetLabel.equals(plugOption.get("label")));
-
-        // 添加新的选项
         addPlugOptions(plugOptions);
     }
     /**
      * 删除选项
      */
-    public static void removePlugOptions(String label) {
-        PlugOptions.removeIf(plugOption -> label.equals(plugOption.get("label")));
+    public static synchronized void removePlugOptions(String value) {
+        PlugOptions.removeIf(plugOption -> Objects.equals(value, plugOption.get("value")));
     }
 
     /**

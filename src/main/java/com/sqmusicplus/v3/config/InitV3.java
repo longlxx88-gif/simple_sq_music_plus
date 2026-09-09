@@ -83,6 +83,20 @@ public class InitV3  implements ApplicationRunner {
         log.info("================缓存设置成功====================");
         log.info("初始化插件");
 
+        // Publish the complete list before any provider makes a network call.
+        // Availability checks must not leave the UI showing only the first source.
+        if (n1OriginalSources) {
+            String[][] sources = {{"kw", "某我"}, {"netease", "猪厂"},
+                    {"qqvip", "鹅厂 VIP下载"}, {"mg", "移动"}, {"tidal", "Tidal"}};
+            for (String[] source : sources) {
+                HashMap<String, String> option = new HashMap<>();
+                option.put("value", source[0]);
+                option.put("label", source[1]);
+                SqConfigCache.addPlugOptions(option);
+            }
+            qqvipHander.initPlug();
+        }
+
 //        ------------------------酷我-----------------------------
 
         String kwsqConfigvalue = SqConfigCache.getSqConfigValue(SetConfigEnum.PLUG_KW_OPEN);

@@ -1,0 +1,321 @@
+<script setup lang="js">
+import {ref, computed, watch, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+import Set from "./V3Set.vue";
+import {
+  getNetSpeed, getQQVipQrCodeStatus
+} from "../utils/api.js";
+
+import configInfoStore from "../stores/config";
+const stconfigInfoStore =configInfoStore()
+
+const uploadSpeed = ref("0.00 B/s");
+const downloadSpeed = ref("0.00 B/s");
+
+// 检查是否显示网速监控
+const showTrafficMonitoring = computed(() => {
+  const trafficConfig = stconfigInfoStore.data?.find(
+    item => item.configKey === 'system.show.traffic.monitoring'
+  );
+  console.log('流量监控显示配置:', trafficConfig);
+  // 如果配置不存在，默认显示；如果配置值为 false（字符串或布尔），则隐藏
+  if (!trafficConfig) return false;
+  const value = trafficConfig.configValue;
+  return value !== 'false' && value !== false;
+});
+
+// 检测是否为移动设备
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// 设置参数
+const active = ref(false);
+const placement = ref("right");
+const activate = (place) => {
+  // 移动端从底部弹出，桌面端从右侧弹出
+  if (isMobile()) {
+    placement.value = 'bottom';
+  } else {
+    placement.value = place;
+  }
+  active.value = true;
+};
+
+/**
+ * 当网速监控开启时，每 1 秒获取一次当前网速
+ * 当网速监控关闭时，停止请求以避免不必要的网络开销
+ */
+let speedIntervalId = null
+
+const startSpeedPolling = () => {
+  if (speedIntervalId) return
+  // 立即执行一次，避免等待 1 秒后才显示
+  getNetSpeed()
+    .then((value) => {
+      uploadSpeed.value = value.data.data.uploadSpeedFormatted + "p"
+      downloadSpeed.value = value.data.data.downloadSpeedFormatted
+    })
+    .catch(() => {})
+  speedIntervalId = setInterval(() => {
+    getNetSpeed()
+      .then((value) => {
+        uploadSpeed.value = value.data.data.uploadSpeedFormatted + "p"
+        downloadSpeed.value = value.data.data.downloadSpeedFormatted
+      })
+      .catch(() => {})
+  }, 1000)
+}
+
+const stopSpeedPolling = () => {
+  if (speedIntervalId) {
+    clearInterval(speedIntervalId)
+    speedIntervalId = null
+  }
+}
+
+watch(showTrafficMonitoring, (val) => {
+  if (val) {
+    startSpeedPolling()
+  } else {
+    stopSpeedPolling()
+  }
+}, { immediate: true })
+
+onUnmounted(() => {
+  stopSpeedPolling()
+})
+
+// 点击顶部 SqMusic：跳回搜索页；若 V3Search 已挂载，通知其清空输入框并回到空态
+const router = useRouter()
+const onLogoClick = () => {
+  if (router.currentRoute.value.path !== '/v3search') {
+    router.push('/v3search')
+  }
+  // 已在搜索页时靠该事件让 V3Search 重置；跨页跳转时新挂载的 V3Search 天然处于空态
+  window.dispatchEvent(new CustomEvent('sqmusic:reset-search'))
+}
+
+</script>
+
+<template>
+  <div>
+    <div class="header">
+      <div class="box"  >
+        <n-popover trigger="hover">
+          <template #trigger>
+            <div>
+              <n-flex justify= "center" align = "center">
+                <h2 class="sq-logo" @click="onLogoClick">SQMUSIC_LITE</h2>
+                <n-gradient-text v-if="showTrafficMonitoring" :size="12" type="success" >
+                  上传：{{uploadSpeed}}
+                  下载：{{downloadSpeed}}
+                </n-gradient-text>
+              </n-flex>
+
+            </div>
+
+          </template>
+          <p>
+            <n-gradient-text :size="12" type="success" >
+              &nbsp;前端版本：{{stconfigInfoStore.uiversion}}
+            </n-gradient-text>
+          </p>
+          <p v-if="stconfigInfoStore.version !== stconfigInfoStore.backendVersion">
+            <n-gradient-text :size="12" type="info" >
+              &nbsp;后端版本：{{stconfigInfoStore.version}}
+            </n-gradient-text>
+          </p>
+        </n-popover>
+
+      </div>
+      
+      <!-- PC 端布局 -->
+      <template v-if="!isMobile()">
+        <div class="box">
+          <!-- 修改路径，添加 /home 前缀 -->
+          <router-link active-class="active" to="/v3search">
+            <n-button size="large" quaternary>
+              搜索
+            </n-button>
+          </router-link>
+          <router-link active-class="active" to="/V3Download">
+            <n-button size="large" quaternary>
+              下载
+            </n-button>
+          </router-link>
+          <router-link active-class="active" to="/V3ParserPlaylist">
+            <n-button size="large" quaternary>
+              解析歌单
+            </n-button>
+          </router-link>
+        </div>
+        <div class="box">
+            <n-button  size="large" quaternary @click="activate('right')">
+              设置
+            </n-button>
+        </div>
+      </template>
+
+      <!-- 移动端布局 -->
+      <template v-else>
+        <div class="box mobile-nav">
+          <router-link active-class="active" to="/v3search">
+            <n-button size="large" quaternary>
+              搜索
+            </n-button>
+          </router-link>
+          <router-link active-class="active" to="/V3Download">
+            <n-button size="large" quaternary>
+              下载
+            </n-button>
+          </router-link>
+          <router-link active-class="active" to="/V3ParserPlaylist">
+            <n-button size="large" quaternary>
+              解析歌单
+            </n-button>
+          </router-link>
+          <n-button size="large" quaternary @click="activate('right')">
+            设置
+          </n-button>
+        </div>
+      </template>
+    </div>
+  </div>
+<!--设置弹出框-->
+  <n-drawer v-model:show="active" :width="isMobile() ? '100%' : 502" :height="isMobile() ? '80%' : '100%'" :placement="placement">
+    <n-drawer-content title="设置">
+    <Set></Set>
+    </n-drawer-content>
+  </n-drawer>
+
+
+
+</template>
+
+<style scoped>
+.header{
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+}
+.box{
+  display: flex;
+  align-items: center;
+  flex-direction:row;
+  align-content: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* SqMusic 品牌标题：与 V3Search 空态大标题同款渐变字，字号与边距保持原 h2 不变 */
+.sq-logo{
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  user-select: none;
+  background: linear-gradient(120deg, #5B8CFF 0%, #8B5CF6 38%, #F472B6 76%, #34D399 110%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  transition: opacity 0.2s ease;
+}
+.sq-logo:hover{
+  opacity: 0.85;
+}
+
+/* 移动端导航样式 */
+.mobile-nav {
+  width: 100%;
+  justify-content: space-around;
+  margin-top: 10px;
+}
+
+.mobile-nav a,
+.mobile-nav button {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+
+.mobile-nav a .n-button,
+.mobile-nav button {
+  width: 100%;
+  font-size: 14px;
+  padding: 0 5px;
+}
+
+img{
+  width: 40px;
+  height: 40px;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  margin: 10px 90px;
+  font:16px Arial, Helvetica, sans-serif;
+}
+
+
+nav a:hover {
+  opacity: 1;
+}
+
+.active {
+  //color: #608bd2;
+  pointer-events: none;
+  opacity: 1;
+}
+
+/*搜索框*/
+
+.text{
+  height: 22px;
+  font-size: 14px;
+  //border: 1px solid #ccc;
+  padding: 3px 16px;
+  border-bottom-left-radius: 20px;
+  border-top-left-radius: 20px;
+}
+.text:focus{
+  outline: none;
+  //border-color: rgba(82, 168, 236, 0.8);
+  //box-shadow: inset 0 2px 2px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+}
+.button{
+  width: 60px;
+  height: 30px;
+  font-size: 14px;
+  margin-right: 35px;
+  //border: 1px solid #608bd2;
+  //background-color: #608bd2;
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+.contents{
+  display: flex;
+  justify-content: center;
+}
+.content{
+  display: flex;
+  width: 1400px;
+  height: 1400px;
+  /*background-color: #f0f2f3;*/
+}
+a{
+  text-decoration: none;
+
+  color:#000000;
+
+  font-family:sans-serif;
+
+  font-size: 12px;
+
+}
+</style>

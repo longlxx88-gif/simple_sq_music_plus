@@ -1,4 +1,4 @@
-# SQMUSIC_LITE profile for N1 / ARM64.
+# SQMUSIC_LITE storage/runtime settings for FNOS and N1 (legacy profile name).
 # The database and queue state live under APP_DATA_DIR so no MySQL container is needed.
 spring:
   datasource:
@@ -14,7 +14,7 @@ spring:
     init:
       mode: always
       schema-locations: classpath:db/n1-schema.sql
-      data-locations: classpath:db/sq_config.sql
+      data-locations: classpath:db/sq_config.sql,classpath:db/lite-source-defaults.sql
       continue-on-error: true
   task:
     execution:
@@ -36,3 +36,6 @@ mcp:
   enabled: ${MCP_ENABLED:true}
   http-path: /mcp
   stdio-enabled: ${MCP_STDIO_ENABLED:false}
+
+sqmusic:
+  original-sources: ${SQMUSIC_ORIGINAL_SOURCES:true}

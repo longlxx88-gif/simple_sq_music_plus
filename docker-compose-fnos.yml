@@ -3,7 +3,7 @@ services:
     image: ${SQMUSIC_IMAGE:-ghcr.io/longlxx88-gif/sqmusic_lite:latest}
     container_name: sqmusic_lite
     environment:
-      SPRING_PROFILES_ACTIVE: n1,kw,mg,qq,netease,kg,tidal
+      SPRING_PROFILES_ACTIVE: lite,kw,mg,qq,netease,kg,tidal
       SQMUSIC_ORIGINAL_SOURCES: "true"
       APP_DATA_DIR: /data
       MCP_ENABLED: "true"
@@ -13,19 +13,16 @@ services:
       NO_PROXY: localhost,127.0.0.1,::1,sqmusic_main,sqmusic_web
       JAVA_OPTS: -Xms128m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
     volumes:
-      - ./data:/data
+      - /vol3/1000/docker/sqmusic_lite/data:/data
       - /vol3/1000/music-api-test:/music
     ports:
-      # 8099/8096 are commonly occupied by older SQMusic deployments on N1.
-      # Override with SQMUSIC_HTTP_PORT/SQMUSIC_WEB_PORT when those ports are free.
-      - "${SQMUSIC_HTTP_PORT:-8199}:8099"
+      - "8199:8099"
     restart: unless-stopped
-
   sqmusic_web:
     image: ${SQMUSIC_WEB_IMAGE:-ghcr.io/longlxx88-gif/sqmusic_lite_web:latest}
     container_name: sqmusic_lite_web
     ports:
-      - "${SQMUSIC_WEB_PORT:-8196}:80"
+      - "8196:80"
     depends_on:
       - sqmusic_main
     restart: unless-stopped

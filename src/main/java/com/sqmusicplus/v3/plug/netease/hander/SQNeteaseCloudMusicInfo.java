@@ -2,8 +2,14 @@ package com.sqmusicplus.v3.plug.netease.hander;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.sqmusicplus.v3.utils.DownloadUtils;
+import com.sqmusicplus.v3.utils.OkHttpUtils;
+import okhttp3.Call;
+import okhttp3.Request;
+import okhttp3.Response;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -191,8 +197,24 @@ public class SQNeteaseCloudMusicInfo {
         return DownloadUtils.postCookieToJsonObject(baseUrl + url, parameter, cookie,header);
     }
     public JSONObject innerVersion(){
-        String url = "/inner/version";
-        return DownloadUtils.getToJsonObject(baseUrl + url);
+        return innerVersion(5000);
+    }
+
+    JSONObject innerVersion(long timeoutMillis) {
+        Request.Builder request = new Request.Builder().url(baseUrl + "/inner/version");
+        header.forEach(request::header);
+        Call call = OkHttpUtils.newCall(request.get().build());
+        // A dead public API must not indefinitely block all later providers and
+        // the download scheduler during application startup.
+        call.timeout().timeout(timeoutMillis, TimeUnit.MILLISECONDS);
+        try (Response response = call.execute()) {
+            if (!response.isSuccessful() || response.body() == null) {
+                throw new IOException("网易云接口探测 HTTP " + response.code());
+            }
+            return JSONObject.parseObject(response.body().string());
+        } catch (IOException e) {
+            throw new IllegalStateException("网易云接口探测失败或超时", e);
+        }
     }
 
 

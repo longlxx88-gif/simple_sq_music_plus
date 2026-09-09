@@ -117,24 +117,16 @@ public class QQHander extends SearchHanderAbstract {
         String payload = qqSearchEntity.searchRequestParam(keyword, type,
                 pageIndex == null || pageIndex < 1 ? 1 : pageIndex,
                 pageSize == null || pageSize < 1 ? 20 : pageSize);
-        String response = OkHttpUtils.builder()
-                .url(searchUrl)
-                .addHeader("Content-Type", "application/json; charset=utf-8")
-                .addHeader("Accept", "application/json")
-                .addHeader("Referer", "https://y.qq.com/")
-                .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36")
-                .post(true, payload)
-                .sync();
-        if (StringUtils.isBlank(response)) {
-            throw new IllegalStateException("QQ 音乐搜索接口返回为空");
+        String savedLogin = SqConfigCache.getSqConfigValue(SetConfigEnum.PLUG_QQVIP_COOKIE);
+        QQMusicCookieInfo login = null;
+        if (StringUtils.isNotBlank(savedLogin)) {
+            try {
+                login = JSONObject.parseObject(savedLogin, QQMusicCookieInfo.class);
+            } catch (RuntimeException e) {
+                throw new IllegalStateException("QQ 登录信息格式异常，请在设置中重新登录");
+            }
         }
-        JSONObject result = JSONObject.parseObject(response);
-        JSONObject request = result.getJSONObject("req");
-        if (request == null || request.getJSONObject("data") == null) {
-            log.warn("QQ 音乐搜索接口返回异常: {}", response.length() > 500 ? response.substring(0, 500) : response);
-            throw new IllegalStateException("QQ 音乐搜索接口暂不可用");
-        }
-        return result;
+        return QQSearchClient.search(searchUrl, QQSearchClient.withLogin(payload, login), type);
     }
 
     @Override
