@@ -96,7 +96,7 @@ jobs:
           file: ./netease-cloud-music-api/Dockerfile
           build-args: |
             NETEASE_API_VERSION=${{ steps.npm_version.outputs.version }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/arm64
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:v${{ steps.npm_version.outputs.version }}

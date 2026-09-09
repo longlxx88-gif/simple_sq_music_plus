@@ -11,7 +11,9 @@ import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created with IntelliJ IDEA.
@@ -50,16 +52,46 @@ public class ImageIOUtils {
         if (stream == null) {
             throw new IIOException("Can't create an ImageInputStream!");
         }
-        BufferedImage bi = null;
+        BufferedImage bi;
         try {
             bi = read(stream);
         } catch (Exception e) {
-            return null;
+            bi = null;
         }
         if (bi == null) {
             stream.close();
+            // The previous WebP ImageIO provider bundled an x86-64 native library.
+            // N1 uses the ARM64 ffmpeg package already present in the runtime image.
+            return readWithFfmpeg(input);
         }
         return bi;
+    }
+
+    private static BufferedImage readWithFfmpeg(File input) {
+        File converted = null;
+        try {
+            converted = Files.createTempFile("sqmusic-cover-", ".png").toFile();
+            Process process = new ProcessBuilder(
+                    "ffmpeg", "-v", "error", "-y", "-i", input.getAbsolutePath(),
+                    "-frames:v", "1", converted.getAbsolutePath())
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start();
+            if (!process.waitFor(20, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                return null;
+            }
+            return process.exitValue() == 0 ? ImageIO.read(converted) : null;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            if (converted != null) {
+                try {
+                    Files.deleteIfExists(converted.toPath());
+                } catch (IOException ignored) {
+                }
+            }
+        }
     }
 
     private static BufferedImage read(ImageInputStream stream)
@@ -135,24 +167,23 @@ public class ImageIOUtils {
     /**
      * 无损压缩
      */
-    public  static File convertWebpToJpeg(File webpFile, File jpgFile) {
-
-        // 使用ImageIO读取WebP图像
-        BufferedImage image = null;
+    public static File convertWebpToJpeg(File webpFile, File jpgFile) {
         try {
-            image = ImageIO.read(webpFile);
-            // 使用ImageIO将图像写入JPEG格式
-            boolean result = ImageIO.write(image, "jpg", jpgFile);
-            if (!result) {
-               return webpFile;
+            Process process = new ProcessBuilder(
+                    "ffmpeg", "-v", "error", "-y", "-i", webpFile.getAbsolutePath(),
+                    "-frames:v", "1", "-q:v", "2", jpgFile.getAbsolutePath())
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start();
+            if (!process.waitFor(20, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                return webpFile;
             }
-            return jpgFile;
+            return process.exitValue() == 0 && jpgFile.isFile() && jpgFile.length() > 0
+                    ? jpgFile
+                    : webpFile;
         } catch (Exception e) {
             return webpFile;
         }
-
-
-
-
     }
 }

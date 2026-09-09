@@ -1,6 +1,7 @@
 services:
   sqmusic_main:
     image: ${SQMUSIC_IMAGE:-ghcr.io/longlxx88-gif/sqmusic_lite:latest}
+    platform: linux/arm64
     container_name: sqmusic_lite
     environment:
       SPRING_PROFILES_ACTIVE: n1,kw,mg,qq,netease,kg,tidal
@@ -11,10 +12,10 @@ services:
       HTTP_PROXY: http://192.168.31.33:7890
       HTTPS_PROXY: http://192.168.31.33:7890
       NO_PROXY: localhost,127.0.0.1,::1,sqmusic_main,sqmusic_web
-      JAVA_OPTS: -Xms128m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+      JAVA_OPTS: -Xms64m -Xmx320m -Xss512k -XX:+UseSerialGC -XX:ReservedCodeCacheSize=96m -XX:MaxMetaspaceSize=160m
     volumes:
       - ./data:/data
-      - /vol3/1000/music-api-test:/music
+      - ./music:/music
     ports:
       # 8099/8096 are commonly occupied by older SQMusic deployments on N1.
       # Override with SQMUSIC_HTTP_PORT/SQMUSIC_WEB_PORT when those ports are free.
@@ -23,6 +24,7 @@ services:
 
   sqmusic_web:
     image: ${SQMUSIC_WEB_IMAGE:-ghcr.io/longlxx88-gif/sqmusic_lite_web:latest}
+    platform: linux/arm64
     container_name: sqmusic_lite_web
     ports:
       - "${SQMUSIC_WEB_PORT:-8196}:80"

@@ -2,6 +2,7 @@
 services:
   sqmusic_main:
     image: ${SQMUSIC_IMAGE:-ghcr.io/longlxx88-gif/sqmusic_lite:latest}
+    platform: linux/arm64
     container_name: sqmusic_lite
     environment:
       SPRING_PROFILES_ACTIVE: n1,kw,mg,qq,netease,kg,tidal
@@ -9,16 +10,17 @@ services:
       APP_DATA_DIR: /data
       MCP_ENABLED: "true"
       MCP_STDIO_ENABLED: "false"
-      JAVA_OPTS: -Xms128m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+      JAVA_OPTS: -Xms64m -Xmx320m -Xss512k -XX:+UseSerialGC -XX:ReservedCodeCacheSize=96m -XX:MaxMetaspaceSize=160m
     volumes:
       - ./data:/data
-      - /vol3/1000/music-api-test:/music
+      - ./music:/music
     ports:
       - "8099:8099"
     restart: unless-stopped
 
   sqmusic_web:
     image: ${SQMUSIC_WEB_IMAGE:-registry.cn-hangzhou.aliyuncs.com/sqdockler/simple_sq_music_plus_web:latest-arm64}
+    platform: linux/arm64
     container_name: sqmusic_lite_web
     ports:
       - "8096:80"

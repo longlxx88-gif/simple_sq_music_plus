@@ -19,7 +19,6 @@ import com.sqmusicplus.v3.plug.netease.hander.NeteaseHander;
 import com.sqmusicplus.v3.utils.StringUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -247,7 +246,8 @@ public class ScanNeteasePlayList {
      * @return 包含则返回true（需要忽略），否则返回false
      */
     public static boolean checkNeedExclude(List<String> excludeArtistNames, List<String> musicArtists) {
-        if (CollectionUtils.isEmpty(excludeArtistNames) || CollectionUtils.isEmpty(musicArtists)) {
+        if (excludeArtistNames == null || excludeArtistNames.isEmpty()
+                || musicArtists == null || musicArtists.isEmpty()) {
             return false;
         }
         Set<String> musicArtistsSet = new HashSet<>(musicArtists);

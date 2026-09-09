@@ -1,7 +1,11 @@
 # SQMUSIC_LITE runtime image. The JAR is built by CI and copied in.
 FROM amazoncorretto:21-alpine AS extractor
+ARG TARGETARCH
 LABEL maintainer="SQ"
 WORKDIR /extractor
+
+# SQMUSIC_LITE is intentionally N1/ARM64-only.
+RUN test "$TARGETARCH" = "arm64"
 
 # 声明构建参数（默认值兼容本地开发：先 mvn package 再 docker build）
 ARG JAR_FILE=target/sqmusic_lite.jar
@@ -13,6 +17,9 @@ RUN java -Djarmode=layertools -jar app.jar extract --destination /extractor/laye
 
 # 第二阶段：运行环境
 FROM amazoncorretto:21-alpine
+ARG TARGETARCH
+
+RUN test "$TARGETARCH" = "arm64"
 
 # FFmpeg is used only when a provider needs audio remuxing/transcoding.
 RUN apk add --no-cache ffmpeg
@@ -33,7 +40,7 @@ RUN echo "Running on architecture: $(uname -m)" && \
     echo "Java version:" && java -version
 
 # 设置 JVM 参数优化
-ENV JAVA_OPTS="-Xms128m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+ENV JAVA_OPTS="-Xms64m -Xmx320m -Xss512k -XX:+UseSerialGC -XX:ReservedCodeCacheSize=96m -XX:MaxMetaspaceSize=160m"
 
 # 暴露端口
 EXPOSE 8099

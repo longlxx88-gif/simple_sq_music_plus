@@ -1,14 +1,14 @@
-# SQMUSIC_LITE storage/runtime settings for FNOS and N1 (legacy profile name).
+# SQMUSIC_LITE storage/runtime settings for N1 / ARM64.
 # The database and queue state live under APP_DATA_DIR so no MySQL container is needed.
 spring:
   datasource:
-    url: jdbc:h2:file:${APP_DATA_DIR:./data}/sqmusic;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;AUTO_SERVER=TRUE
+    url: jdbc:h2:file:${APP_DATA_DIR:./data}/sqmusic;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
     driver-class-name: org.h2.Driver
     username: ${DB_USERNAME:sa}
     password: ${DB_PASSWORD:}
     hikari:
       minimum-idle: 1
-      maximum-pool-size: 4
+      maximum-pool-size: 2
       connection-timeout: 30000
   sql:
     init:
@@ -19,13 +19,21 @@ spring:
   task:
     execution:
       pool:
-        size: 4
-        core-size: 2
-        max-size: 4
+        size: 2
+        core-size: 1
+        max-size: 2
+
+server:
+  tomcat:
+    threads:
+      min-spare: 2
+      max: 20
+    max-connections: 100
+    accept-count: 20
 
 app:
   scheduler:
-    pool-size: 4
+    pool-size: 2
   features:
     # Queue execution, Tidal token refresh and cleanup remain enabled.
     background-automation: false
