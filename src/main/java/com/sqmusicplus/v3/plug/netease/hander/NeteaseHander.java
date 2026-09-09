@@ -134,12 +134,17 @@ public class NeteaseHander extends SearchHanderAbstract {
         parameter.put("type", SearchEnums.SONG.getValue());
         parameter.put("offset", ((searchKeyData.getPageIndex())-1)*searchKeyData.getPageSize());
         JSONObject cloudsearch = neteaseCloudMusicInfo.cloudsearch(parameter);
-        SearchMusicNeteaseResult searchMusicResult = cloudsearch.toJavaObject(SearchMusicNeteaseResult.class);
+        SearchMusicNeteaseResult searchMusicResult = cloudsearch == null ? null : cloudsearch.toJavaObject(SearchMusicNeteaseResult.class);
         PlugSearchResult<PlugSearchMusicResult> plugSearchResult = new PlugSearchResult<>();
         ArrayList<PlugSearchMusicResult> plugSearchMusicResults = new ArrayList<>();
-        if (searchMusicResult.getCode()==200) {
-            List<SearchMusicNeteaseResult.ResultDTO.SongsDTO> songs = searchMusicResult.getResult().getSongs();
+        SearchMusicNeteaseResult.ResultDTO result = searchMusicResult == null ? null : searchMusicResult.getResult();
+        boolean success = searchMusicResult != null && Long.valueOf(200L).equals(searchMusicResult.getCode()) && result != null;
+        if (success) {
+            List<SearchMusicNeteaseResult.ResultDTO.SongsDTO> songs = result.getSongs() == null ? Collections.emptyList() : result.getSongs();
             songs.forEach(songsDTO -> {
+                if (songsDTO == null) {
+                    return;
+                }
                 ArrayList<String> artists = new ArrayList<>();
                 ArrayList<String> artistids = new ArrayList<>();
                 ArrayList<PlugBrType> brTypes = new ArrayList<>();
@@ -167,17 +172,24 @@ public class NeteaseHander extends SearchHanderAbstract {
 
 
 
-                List<SearchMusicNeteaseResult.ResultDTO.SongsDTO.ArDTO> collect = songsDTO.getAr().stream().toList();
+                List<SearchMusicNeteaseResult.ResultDTO.SongsDTO.ArDTO> collect = songsDTO.getAr() == null ? Collections.emptyList() : songsDTO.getAr();
                 for (SearchMusicNeteaseResult.ResultDTO.SongsDTO.ArDTO arDTO : collect) {
-                    artists.add(arDTO.getName());
-                    artistids.add(arDTO.getId().toString());
+                    if (arDTO != null) {
+                        artists.add(arDTO.getName());
+                        if (arDTO.getId() != null) {
+                            artistids.add(arDTO.getId().toString());
+                        }
+                    }
                 }
+                String albumName = songsDTO.getAl() == null ? null : songsDTO.getAl().getName();
+                String albumId = songsDTO.getAl() == null || songsDTO.getAl().getId() == null ? null : songsDTO.getAl().getId().toString();
+                String pic = songsDTO.getAl() == null ? null : songsDTO.getAl().getPicUrl();
                 PlugSearchMusicResult plugSearchMusicResult = new PlugSearchMusicResult().setArtistName(artists)
-                        .setAlbumName(songsDTO.getAl().getName())
-                        .setDuration(songsDTO.getDt().toString())
-                        .setPic(songsDTO.getAl().getPicUrl())
+                        .setAlbumName(albumName)
+                        .setDuration(songsDTO.getDt() == null ? null : songsDTO.getDt().toString())
+                        .setPic(pic)
                         .setArtistids(artistids)
-                        .setAlbumid(songsDTO.getAl().getId().toString())
+                        .setAlbumid(albumId)
                         .setId(songsDTO.getId().toString())
                         .setPlugName(getPlugName())
                         .setBrTypes(brTypes)
@@ -186,11 +198,14 @@ public class NeteaseHander extends SearchHanderAbstract {
                         .setDataInfo(JSONObject.parseObject(JSONObject.toJSONString(songsDTO)));
                 plugSearchMusicResults.add(plugSearchMusicResult);
             });
+        } else {
+            log.warn("网易云搜索未返回有效歌曲结果，关键词：{}，响应：{}", searchKeyData.getSearchkey(), cloudsearch);
         }
+        int searchTotal = result != null && result.getSongCount() != null ? result.getSongCount().intValue() : plugSearchMusicResults.size();
         plugSearchResult.setSearchIndex(searchKeyData.getPageIndex())
                 .setSearchSize(searchKeyData.getPageSize())
                 .setPlugName(getPlugName())
-                .setSearchTotal( searchMusicResult.getResult().getSongCount().intValue())
+                .setSearchTotal(searchTotal)
                 .setSearchKeyWork(searchKeyData.getSearchkey())
                 .setRecords(plugSearchMusicResults);
         plugSearchResult.setPlugName(getPlugName());
@@ -207,24 +222,31 @@ public class NeteaseHander extends SearchHanderAbstract {
         JSONObject cloudsearch = neteaseCloudMusicInfo.cloudsearch(parameter);
         ArrayList<PlugSearchArtistResult> plugSearchArtistResults = new ArrayList<>();
         PlugSearchResult<PlugSearchArtistResult> plugSearchResult = new PlugSearchResult<>();
-        SearchArtistNeteaseResult artistNeteaseResult = cloudsearch.toJavaObject(SearchArtistNeteaseResult.class);
-        if (artistNeteaseResult.getCode()==200) {
-            List<SearchArtistNeteaseResult.ResultDTO.ArtistsDTO> artists = artistNeteaseResult.getResult().getArtists();
+        SearchArtistNeteaseResult artistNeteaseResult = cloudsearch == null ? null : cloudsearch.toJavaObject(SearchArtistNeteaseResult.class);
+        SearchArtistNeteaseResult.ResultDTO artistResult = artistNeteaseResult == null ? null : artistNeteaseResult.getResult();
+        if (artistNeteaseResult != null && Long.valueOf(200L).equals(artistNeteaseResult.getCode()) && artistResult != null) {
+            List<SearchArtistNeteaseResult.ResultDTO.ArtistsDTO> artists = artistResult.getArtists() == null ? Collections.emptyList() : artistResult.getArtists();
             artists.forEach(artistsDTO -> {
+                if (artistsDTO == null) {
+                    return;
+                }
                 PlugSearchArtistResult plugSearchArtistResult = new PlugSearchArtistResult()
                         .setArtistName(artistsDTO.getName())
-                        .setArtistid(artistsDTO.getId().toString())
+                        .setArtistid(artistsDTO.getId() == null ? null : artistsDTO.getId().toString())
                         .setPlugName(getPlugName())
                         .setPic(artistsDTO.getPicUrl())
                         .setDataInfo(JSONObject.parseObject(JSONObject.toJSONString(artistsDTO)))
-                        .setTotal(artistsDTO.getAlbumSize().toString());
+                        .setTotal(artistsDTO.getAlbumSize() == null ? null : artistsDTO.getAlbumSize().toString());
                 plugSearchArtistResults.add(plugSearchArtistResult);
             });
+        } else {
+            log.warn("网易云搜索未返回有效歌手结果，关键词：{}，响应：{}", searchKeyData.getSearchkey(), cloudsearch);
         }
+        int artistTotal = artistResult != null && artistResult.getArtistCount() != null ? artistResult.getArtistCount() : plugSearchArtistResults.size();
         plugSearchResult.setSearchIndex(searchKeyData.getPageIndex())
                 .setSearchSize(searchKeyData.getPageSize())
                 .setPlugName(getPlugName())
-                .setSearchTotal(artistNeteaseResult.getResult().getArtistCount())
+                .setSearchTotal(artistTotal)
                 .setSearchKeyWork(searchKeyData.getSearchkey())
                 .setRecords(plugSearchArtistResults);
         plugSearchResult.setPlugName(getPlugName());
@@ -242,25 +264,32 @@ public class NeteaseHander extends SearchHanderAbstract {
         ArrayList<PlugSearchAlbumResult> plugSearchAlbumResults = new ArrayList<>();
         PlugSearchResult<PlugSearchAlbumResult> plugSearchResult = new PlugSearchResult<>();
         JSONObject cloudsearch = neteaseCloudMusicInfo.cloudsearch(parameter);
-        SearchAlbumsNeteaseResult albumsNeteaseResult = cloudsearch.toJavaObject(SearchAlbumsNeteaseResult.class);
-        if (albumsNeteaseResult.getCode()==200) {
-            List<SearchAlbumsNeteaseResult.ResultDTO.AlbumsDTO> albums = albumsNeteaseResult.getResult().getAlbums();
+        SearchAlbumsNeteaseResult albumsNeteaseResult = cloudsearch == null ? null : cloudsearch.toJavaObject(SearchAlbumsNeteaseResult.class);
+        SearchAlbumsNeteaseResult.ResultDTO albumResult = albumsNeteaseResult == null ? null : albumsNeteaseResult.getResult();
+        if (albumsNeteaseResult != null && Long.valueOf(200L).equals(albumsNeteaseResult.getCode()) && albumResult != null) {
+            List<SearchAlbumsNeteaseResult.ResultDTO.AlbumsDTO> albums = albumResult.getAlbums() == null ? Collections.emptyList() : albumResult.getAlbums();
             albums.forEach(albumsDTO -> {
+                if (albumsDTO == null) {
+                    return;
+                }
                 PlugSearchAlbumResult plugSearchAlbumResult = new PlugSearchAlbumResult()
                         .setAlbumName(albumsDTO.getName())
-                        .setAlbumid(albumsDTO.getId().toString())
-                        .setArtistName(albumsDTO.getArtist().getName())
-                        .setArtistid(albumsDTO.getArtist().getId().toString())
+                        .setAlbumid(albumsDTO.getId() == null ? null : albumsDTO.getId().toString())
+                        .setArtistName(albumsDTO.getArtist() == null ? null : albumsDTO.getArtist().getName())
+                        .setArtistid(albumsDTO.getArtist() == null || albumsDTO.getArtist().getId() == null ? null : albumsDTO.getArtist().getId().toString())
                         .setPlugName(getPlugName())
                         .setDataInfo(JSONObject.parseObject(JSONObject.toJSONString(albumsDTO)))
                         .setPic(albumsDTO.getPicUrl());
                 plugSearchAlbumResults.add(plugSearchAlbumResult);
             });
+        } else {
+            log.warn("网易云搜索未返回有效专辑结果，关键词：{}，响应：{}", searchKeyData.getSearchkey(), cloudsearch);
         }
+        int albumTotal = albumResult != null && albumResult.getAlbumCount() != null ? albumResult.getAlbumCount() : plugSearchAlbumResults.size();
         plugSearchResult.setSearchIndex(searchKeyData.getPageIndex())
                 .setSearchSize(searchKeyData.getPageSize())
                 .setPlugName(getPlugName())
-                .setSearchTotal(albumsNeteaseResult.getResult().getAlbumCount())
+                .setSearchTotal(albumTotal)
                 .setSearchKeyWork(searchKeyData.getSearchkey())
                 .setRecords(plugSearchAlbumResults);
         return plugSearchResult;
